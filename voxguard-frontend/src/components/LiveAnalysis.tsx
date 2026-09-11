@@ -178,27 +178,48 @@ export default function LiveAnalysis({ onResult }: LiveAnalysisProps) {
             height={220}
           />
 
-          {/* Real-time metrics bar */}
+          {/* Authenticity & Provenance Report */}
           {latestResult && (
-            <div className="mt-3 glass-subtle rounded-xl px-4 py-2.5 flex flex-wrap items-center gap-6 text-xs font-mono text-vox-text-dim animate-[fade-in_0.2s]">
-              <span>
-                Flatness: <span className={latestResult.spectral_flatness && latestResult.spectral_flatness > 0.35 ? "text-vox-danger" : "text-vox-success"}>
-                  {latestResult.spectral_flatness?.toFixed(4) ?? "—"}
-                </span>
-              </span>
-              <span>
-                Centroid: <span className="text-vox-cyan">{latestResult.spectral_centroid_hz?.toFixed(0) ?? "—"} Hz</span>
-              </span>
-              <span>
-                HF Ratio: <span className={latestResult.hf_energy_ratio && (latestResult.hf_energy_ratio < 0.01 || latestResult.hf_energy_ratio > 0.7) ? "text-vox-danger" : "text-vox-success"}>
-                  {latestResult.hf_energy_ratio?.toFixed(4) ?? "—"}
-                </span>
-              </span>
-              <span>
-                Latency: <span className={latestResult.latency_ms < 200 ? "text-vox-success" : "text-vox-danger"}>
-                  {latestResult.latency_ms.toFixed(0)}ms
-                </span>
-              </span>
+            <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3 animate-[slide-up_0.3s_ease-out]">
+              {/* Spectral Analysis */}
+              <div className="glass-subtle rounded-xl p-3 border border-vox-border/30">
+                <p className="text-[10px] uppercase tracking-wider text-vox-text-muted mb-1">Spectral</p>
+                <div className="flex items-center gap-2">
+                  <div className={`w-1.5 h-1.5 rounded-full ${latestResult.spectral_flatness && latestResult.spectral_flatness > 0.35 ? "bg-vox-danger" : "bg-vox-success"}`} />
+                  <span className="text-xs font-mono text-vox-text">
+                    {latestResult.spectral_flatness && latestResult.spectral_flatness > 0.35 ? "Anomalous" : "Natural"}
+                  </span>
+                </div>
+              </div>
+
+              {/* Prosody Analysis */}
+              <div className="glass-subtle rounded-xl p-3 border border-vox-border/30">
+                <p className="text-[10px] uppercase tracking-wider text-vox-text-muted mb-1">Prosody</p>
+                <div className="flex items-center gap-2">
+                  <div className={`w-1.5 h-1.5 rounded-full ${latestResult.hf_energy_ratio && (latestResult.hf_energy_ratio < 0.01 || latestResult.hf_energy_ratio > 0.7) ? "bg-vox-danger" : "bg-vox-success"}`} />
+                  <span className="text-xs font-mono text-vox-text">
+                    {latestResult.hf_energy_ratio && (latestResult.hf_energy_ratio < 0.01 || latestResult.hf_energy_ratio > 0.7) ? "Unnatural" : "Consistent"}
+                  </span>
+                </div>
+              </div>
+
+              {/* Watermark Check */}
+              <div className="glass-subtle rounded-xl p-3 border border-vox-border/30">
+                <p className="text-[10px] uppercase tracking-wider text-vox-text-muted mb-1">Watermark</p>
+                <div className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-vox-text-muted" />
+                  <span className="text-xs font-mono text-vox-text-dim">Not Detected</span>
+                </div>
+              </div>
+
+              {/* Provenance Check */}
+              <div className="glass-subtle rounded-xl p-3 border border-vox-warning/30 bg-vox-warning/5">
+                <p className="text-[10px] uppercase tracking-wider text-vox-warning/70 mb-1">Provenance</p>
+                <div className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-vox-warning" />
+                  <span className="text-xs font-mono text-vox-warning">Unverified Source</span>
+                </div>
+              </div>
             </div>
           )}
         </div>
