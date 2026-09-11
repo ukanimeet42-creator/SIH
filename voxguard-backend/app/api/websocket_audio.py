@@ -17,9 +17,11 @@ import asyncio
 import json
 import logging
 import time
+from collections import deque
 from typing import Dict
 
 import numpy as np
+import redis.asyncio as redis
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 from app.core.config import get_settings
@@ -56,6 +58,37 @@ _latency_count = 0
 def get_active_sessions() -> Dict[str, SessionInfo]:
     """Return the active sessions dict (used by telemetry routes)."""
     return active_sessions
+
+# ── Redis Smoothing State ────────────────────────────────────────────
+redis_client = None
+try:
+    redis_client = redis.from_url(_settings.REDIS_URL, decode_responses=True)
+except Exception as e:
+    logger.warning("Failed to initialize Redis client: %s", e)
+
+session_windows: dict[str, deque] = {}
+
+async def get_smoothed_confidence(session_id: str, raw_confidence: float) -> float:
+    """Compute a rolling average of confidence scores (N=5)."""
+    if session_id not in session_windows:
+        session_windows[session_id] = deque(maxlen=5)
+    
+    session_windows[session_id].append(raw_confidence)
+    smoothed_score = sum(session_windows[session_id]) / len(session_windows[session_id])
+
+    if redis_client is not None:
+        try:
+            key = f"session:{session_id}:scores"
+            await redis_client.rpush(key, raw_confidence)
+            await redis_client.ltrim(key, -5, -1)
+            await redis_client.expire(key, 60)
+            scores_str = await redis_client.lrange(key, 0, -1)
+            scores = [float(s) for s in scores_str]
+            smoothed_score = sum(scores) / len(scores)
+        except Exception as e:
+            logger.debug("Redis unreachable, using in-memory deque: %s", e)
+            
+    return smoothed_score
 
 
 def get_incident_log() -> list[IncidentRecord]:
@@ -188,6 +221,16 @@ async def live_stream(websocket: WebSocket, session_id: str) -> None:
             for window in windows:
                 # Run detection
                 result = engine.predict_chunk(window)
+                
+                # Apply Redis-backed rolling window smoothing
+                result.confidence = await get_smoothed_confidence(session_id, result.confidence)
+                # Re-evaluate verdict with smoothed score
+                if result.confidence > _settings.DETECTION_THRESHOLD:
+                    result.verdict = DetectionVerdict.SYNTHETIC
+                elif result.confidence < 0.3:
+                    result.verdict = DetectionVerdict.HUMAN
+                else:
+                    result.verdict = DetectionVerdict.UNCERTAIN
 
                 session.chunks_processed += 1
                 _total_chunks += 1
@@ -240,6 +283,7 @@ async def live_stream(websocket: WebSocket, session_id: str) -> None:
     finally:
         session.is_active = False
         active_sessions.pop(session_id, None)
+        session_windows.pop(session_id, None)
         buffer.reset()
         logger.info(
             "Session cleanup — session=%s, chunks=%d, threats=%d",

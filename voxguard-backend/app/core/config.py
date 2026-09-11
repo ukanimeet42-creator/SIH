@@ -44,8 +44,8 @@ class Settings(BaseSettings):
 
     # ── Detector ─────────────────────────────────────────────────────
     DETECTION_THRESHOLD: float = 0.10  # DEMO HACK: Hyper-sensitive to catch phone speakers
-    MODEL_PATH: Optional[str] = None   # Path to ONNX model file (optional)
-    USE_ONNX: bool = False             # Whether to load ONNX model vs DSP-only
+    MODEL_PATH: Optional[str] = "models/aasist.onnx" # Default AASIST ONNX model path
+    USE_ONNX: bool = True              # Enable ONNX model fusion by default
     MAX_INFERENCE_MS: int = 200        # Hard latency cap
 
     # ── DSP Heuristic Thresholds ─────────────────────────────────────

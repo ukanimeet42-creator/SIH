@@ -224,19 +224,40 @@ class DetectorEngine:
             input_shape = input_meta.shape
 
             # Determine input format
-            if len(input_shape) == 2:
-                # Raw waveform: [batch, samples]
+            if len(input_shape) == 2 or len(input_shape) == 3 and input_shape[1] == 1:
+                # Raw waveform: [batch, samples] or [batch, 1, samples]
                 input_data = audio.reshape(1, -1).astype(np.float32)
-                # Pad or truncate to expected length if specified
-                if isinstance(input_shape[1], int) and input_shape[1] > 0:
-                    target_len = input_shape[1]
-                    if input_data.shape[1] < target_len:
-                        input_data = np.pad(input_data, ((0, 0), (0, target_len - input_data.shape[1])))
-                    else:
-                        input_data = input_data[:, :target_len]
+                # Pad or truncate to expected length (AASIST typically uses 64600)
+                target_len = input_shape[-1] if isinstance(input_shape[-1], int) and input_shape[-1] > 0 else 64600
+                if input_data.shape[1] < target_len:
+                    input_data = np.pad(input_data, ((0, 0), (0, target_len - input_data.shape[1])))
+                else:
+                    input_data = input_data[:, :target_len]
+                
+                if len(input_shape) == 3:
+                    input_data = input_data.reshape(1, 1, target_len)
             else:
-                # Feature-based: use MFCC [batch, n_mfcc, T]
-                input_data = features.mfcc.reshape(1, *features.mfcc.shape).astype(np.float32)
+                # Feature-based: Use Mel-spectrogram for AASIST CNN variants
+                mel = features.mel_spectrogram
+                
+                if len(input_shape) == 4:
+                    # [batch, channel, n_mels, time] e.g. [1, 1, 128, 128]
+                    mel = mel.reshape(1, 1, mel.shape[0], mel.shape[1])
+                    target_len = input_shape[3] if isinstance(input_shape[3], int) and input_shape[3] > 0 else 128
+                    if mel.shape[3] < target_len:
+                        mel = np.pad(mel, ((0, 0), (0, 0), (0, 0), (0, target_len - mel.shape[3])))
+                    else:
+                        mel = mel[:, :, :, :target_len]
+                else:
+                    # [batch, n_mels, time] e.g. [1, 128, 128]
+                    mel = mel.reshape(1, mel.shape[0], mel.shape[1])
+                    target_len = input_shape[2] if isinstance(input_shape[2], int) and input_shape[2] > 0 else 128
+                    if mel.shape[2] < target_len:
+                        mel = np.pad(mel, ((0, 0), (0, 0), (0, target_len - mel.shape[2])))
+                    else:
+                        mel = mel[:, :, :target_len]
+                        
+                input_data = mel.astype(np.float32)
 
             outputs = self._onnx_session.run(None, {input_name: input_data})
             logits = outputs[0]

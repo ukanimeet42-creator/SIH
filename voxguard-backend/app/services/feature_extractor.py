@@ -30,6 +30,7 @@ class SpectralFeatures:
 
     lfcc: np.ndarray = field(default_factory=lambda: np.array([]))
     mfcc: np.ndarray = field(default_factory=lambda: np.array([]))
+    mel_spectrogram: np.ndarray = field(default_factory=lambda: np.array([]))
     spectral_flatness: float = 0.0
     spectral_centroid_hz: float = 0.0
     spectral_rolloff_hz: float = 0.0
@@ -115,6 +116,25 @@ def extract_mfcc(
     return librosa.feature.mfcc(
         y=audio, sr=sr, n_mfcc=n_mfcc, n_fft=n_fft, hop_length=hop_length,
     )
+
+
+def extract_mel_spectrogram_db(
+    audio: np.ndarray,
+    sr: int = _settings.SAMPLE_RATE,
+    n_mels: int = 128,
+    n_fft: int = 512,
+    hop_length: int = 160,
+) -> np.ndarray:
+    """Extract Log-Mel Spectrogram for AASIST / LCNN compatibility.
+
+    Returns:
+        2-D array of shape ``(n_mels, T)`` in decibels.
+    """
+    mel_spec = librosa.feature.melspectrogram(
+        y=audio, sr=sr, n_fft=n_fft, hop_length=hop_length, n_mels=n_mels
+    )
+    return librosa.power_to_db(mel_spec, ref=np.max)
+
 
 
 def compute_spectral_flatness(audio: np.ndarray, sr: int = _settings.SAMPLE_RATE) -> float:
@@ -270,6 +290,7 @@ def extract_all_features(
     # ── Core features ────────────────────────────────────────────────
     features.lfcc = extract_lfcc(audio, sr)
     features.mfcc = extract_mfcc(audio, sr)
+    features.mel_spectrogram = extract_mel_spectrogram_db(audio, sr)
     features.spectral_flatness = compute_spectral_flatness(audio, sr)
     features.spectral_centroid_hz = compute_spectral_centroid(audio, sr)
     features.spectral_rolloff_hz = compute_spectral_rolloff(audio, sr)
