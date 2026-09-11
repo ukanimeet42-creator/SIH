@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/:match*",
-      "destination": "https://YOUR_BACKEND_URL/api/:match*"
+      "destination": "https://sih-production-2969.up.railway.app/api/:match*"
     }
   ]
 }
