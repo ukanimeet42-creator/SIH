@@ -1,0 +1,192 @@
+@import "tailwindcss";
+
+@theme {
+  --color-vox-void: #0a0a0f;
+  --color-vox-surface: #12141a;
+  --color-vox-surface-light: #1a1d26;
+  --color-vox-border: #2a2d3a;
+  --color-vox-cyan: #00f0ff;
+  --color-vox-cyan-dim: #00a3ad;
+  --color-vox-purple: #8b5cf6;
+  --color-vox-purple-dim: #6d3fd4;
+  --color-vox-danger: #ef4444;
+  --color-vox-danger-dim: #dc2626;
+  --color-vox-success: #22c55e;
+  --color-vox-success-dim: #16a34a;
+  --color-vox-warning: #f59e0b;
+  --color-vox-text: #e2e8f0;
+  --color-vox-text-dim: #94a3b8;
+  --color-vox-text-muted: #64748b;
+}
+
+/* ── Base Styles ───────────────────────────────────────────────────── */
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-vox-void);
+  color: var(--color-vox-text);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+/* ── Background Grid Pattern ──────────────────────────────────────── */
+
+.bg-grid-pattern {
+  background-image:
+    linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* ── Glassmorphism ─────────────────────────────────────────────────── */
+
+.glass {
+  background: rgba(18, 20, 26, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(42, 45, 58, 0.5);
+  border-radius: 16px;
+}
+
+.glass-subtle {
+  background: rgba(18, 20, 26, 0.4);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(42, 45, 58, 0.3);
+  border-radius: 12px;
+}
+
+/* ── Neon Glow Borders ─────────────────────────────────────────────── */
+
+.neon-border-cyan {
+  border: 1px solid rgba(0, 240, 255, 0.3);
+  box-shadow: 0 0 15px rgba(0, 240, 255, 0.08), inset 0 0 15px rgba(0, 240, 255, 0.03);
+}
+
+.neon-border-purple {
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  box-shadow: 0 0 15px rgba(139, 92, 246, 0.08), inset 0 0 15px rgba(139, 92, 246, 0.03);
+}
+
+.neon-border-danger {
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.12), inset 0 0 15px rgba(239, 68, 68, 0.04);
+}
+
+/* ── Animated Gradient Border ──────────────────────────────────────── */
+
+.gradient-border {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.gradient-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: 1px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(0,240,255,0.4), rgba(139,92,246,0.4), rgba(0,240,255,0.4));
+  background-size: 200% 200%;
+  animation: gradient-shift 4s ease-in-out infinite;
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
+@keyframes gradient-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+/* ── Scrollbar Styling ─────────────────────────────────────────────── */
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 240, 255, 0.2);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 240, 255, 0.4);
+}
+
+/* ── Threat Pulse Animation ────────────────────────────────────────── */
+
+@keyframes threat-pulse {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(239, 68, 68, 0.4), 0 0 60px rgba(239, 68, 68, 0.15);
+  }
+}
+
+.animate-threat-pulse {
+  animation: threat-pulse 1s ease-in-out infinite;
+}
+
+/* ── Scan Line Effect ──────────────────────────────────────────────── */
+
+.scan-overlay {
+  position: relative;
+  overflow: hidden;
+}
+
+.scan-overlay::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(0, 240, 255, 0.03) 50%,
+    transparent 100%
+  );
+  height: 50%;
+  animation: scan-move 4s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes scan-move {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(300%); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+@keyframes fade-in {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes slide-up {
+  0% { opacity: 0; transform: translateY(20px); }
+  100% { opacity: 1; transform: translateY(0); }
+}

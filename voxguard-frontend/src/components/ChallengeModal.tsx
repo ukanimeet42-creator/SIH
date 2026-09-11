@@ -1,0 +1,179 @@
+"use client";
+
+import { useCallback, useEffect, useRef, useState } from "react";
+
+interface ChallengeModalProps {
+  isOpen: boolean;
+  phrase: string;
+  onSubmit: (transcript: string) => void;
+  onCancel: () => void;
+}
+
+export default function ChallengeModal({
+  isOpen,
+  phrase,
+  onSubmit,
+  onCancel,
+}: ChallengeModalProps) {
+  const [isListening, setIsListening] = useState(false);
+  const [transcript, setTranscript] = useState("");
+  const [timeLeft, setTimeLeft] = useState(15);
+  const recognitionRef = useRef<any>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Start Web Speech API recognition
+  const startListening = useCallback(() => {
+    const SpeechRecognition =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      // Fallback: manual text input
+      setTranscript("[Speech API not available — type your response]");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.lang = "en-US";
+    recognition.maxAlternatives = 1;
+
+    recognition.onresult = (event: any) => {
+      let finalTranscript = "";
+      for (let i = 0; i < event.results.length; i++) {
+        finalTranscript += event.results[i][0].transcript;
+      }
+      setTranscript(finalTranscript);
+    };
+
+    recognition.onerror = (event: any) => {
+      console.error("[VoxGuard Challenge] Speech recognition error:", event.error);
+      setIsListening(false);
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+    };
+
+    recognitionRef.current = recognition;
+    recognition.start();
+    setIsListening(true);
+  }, []);
+
+  // Countdown timer
+  useEffect(() => {
+    if (!isOpen) return;
+
+    setTimeLeft(15);
+    setTranscript("");
+
+    timerRef.current = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(timerRef.current!);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+      if (recognitionRef.current) {
+        try { recognitionRef.current.stop(); } catch {}
+      }
+    };
+  }, [isOpen]);
+
+  const handleSubmit = () => {
+    if (recognitionRef.current) {
+      try { recognitionRef.current.stop(); } catch {}
+    }
+    onSubmit(transcript);
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-[fade-in_0.2s_ease-out]">
+      <div className="glass rounded-3xl p-8 max-w-lg w-full mx-4 gradient-border animate-[slide-up_0.3s_ease-out]">
+        {/* Header */}
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 rounded-xl bg-vox-danger/20 flex items-center justify-center border border-vox-danger/30">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-5 h-5 text-vox-danger">
+              <path d="M12 2L3 7v10l9 5 9-5V7l-9-5z" />
+              <path d="M12 8v4M12 16h.01" strokeLinecap="round" />
+            </svg>
+          </div>
+          <div>
+            <h2 className="text-lg font-bold text-vox-text">Voice CAPTCHA Challenge</h2>
+            <p className="text-xs text-vox-text-muted">Synthetic voice detected — please verify your identity</p>
+          </div>
+        </div>
+
+        {/* Challenge Phrase */}
+        <div className="glass-subtle rounded-xl p-5 mb-6 border border-vox-cyan/20">
+          <p className="text-[10px] uppercase tracking-widest text-vox-text-muted mb-2">Read this phrase aloud:</p>
+          <p className="text-xl font-semibold text-vox-cyan font-mono leading-relaxed">
+            &ldquo;{phrase}&rdquo;
+          </p>
+        </div>
+
+        {/* Timer */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <div className={`w-2 h-2 rounded-full ${isListening ? "bg-vox-danger animate-pulse" : "bg-vox-text-muted"}`} />
+            <span className="text-xs text-vox-text-dim">
+              {isListening ? "Listening..." : transcript ? "Recording complete" : "Press to start recording"}
+            </span>
+          </div>
+          <span className={`text-sm font-mono font-bold ${timeLeft <= 5 ? "text-vox-danger" : "text-vox-text-dim"}`}>
+            {timeLeft}s
+          </span>
+        </div>
+
+        {/* Timer bar */}
+        <div className="w-full h-1 rounded-full bg-vox-border/30 mb-5 overflow-hidden">
+          <div
+            className="h-full rounded-full bg-gradient-to-r from-vox-cyan to-vox-purple transition-all duration-1000 ease-linear"
+            style={{ width: `${(timeLeft / 15) * 100}%` }}
+          />
+        </div>
+
+        {/* Transcript preview */}
+        {transcript && (
+          <div className="glass-subtle rounded-xl p-3 mb-5 border border-vox-border/20">
+            <p className="text-[10px] uppercase tracking-widest text-vox-text-muted mb-1">Heard:</p>
+            <p className="text-sm text-vox-text font-mono">{transcript || "..."}</p>
+          </div>
+        )}
+
+        {/* Actions */}
+        <div className="flex gap-3">
+          {!isListening && !transcript && (
+            <button
+              onClick={startListening}
+              className="flex-1 py-3 rounded-xl bg-vox-cyan/20 text-vox-cyan font-semibold text-sm border border-vox-cyan/30 hover:bg-vox-cyan/30 transition-all"
+            >
+              🎤 Start Recording
+            </button>
+          )}
+          {transcript && (
+            <button
+              onClick={handleSubmit}
+              className="flex-1 py-3 rounded-xl bg-vox-success/20 text-vox-success font-semibold text-sm border border-vox-success/30 hover:bg-vox-success/30 transition-all"
+            >
+              ✓ Submit Response
+            </button>
+          )}
+          <button
+            onClick={onCancel}
+            className="px-6 py-3 rounded-xl text-vox-text-muted text-sm border border-vox-border/30 hover:bg-white/[0.03] transition-all"
+          >
+            Skip
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
