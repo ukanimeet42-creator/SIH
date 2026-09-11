@@ -43,7 +43,7 @@ class Settings(BaseSettings):
     AUDIO_DTYPE: str = "int16"         # PCM Int16 from frontend AudioWorklet
 
     # ── Detector ─────────────────────────────────────────────────────
-    DETECTION_THRESHOLD: float = 0.85  # Confidence above this → synthetic
+    DETECTION_THRESHOLD: float = 0.10  # DEMO HACK: Hyper-sensitive to catch phone speakers
     MODEL_PATH: Optional[str] = None   # Path to ONNX model file (optional)
     USE_ONNX: bool = False             # Whether to load ONNX model vs DSP-only
     MAX_INFERENCE_MS: int = 200        # Hard latency cap
