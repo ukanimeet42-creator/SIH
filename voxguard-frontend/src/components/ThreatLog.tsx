@@ -60,7 +60,8 @@ export default function ThreatLog({ results }: ThreatLogProps) {
                     ? "bg-red-500/[0.04] hover:bg-red-500/[0.08]"
                     : "hover:bg-white/[0.02]";
 
-                const ts = new Date(result.timestamp);
+                const tsString = result.timestamp.endsWith('Z') ? result.timestamp : `${result.timestamp}Z`;
+                const ts = new Date(tsString);
                 const timeStr = ts.toLocaleTimeString("en-US", {
                   hour12: false,
                   hour: "2-digit",
